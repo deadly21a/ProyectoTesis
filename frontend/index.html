@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>ProyectoTesis — Dashboard</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"/>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"/>
+
+    <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        /* Estilo para que los contenedores de gráficos sean más altos en el diseño vertical */
+        .chart-container {
+            height: 400px; /* Altura fija para los gráficos */
+            margin-bottom: 20px;
+        }
+        /* Estilos específicos para la Infografía */
+        #tabInfografia iframe {
+            width: 100%;
+            height: 80vh; /* Ocupa el 80% de la altura del viewport */
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row bg-primary text-white p-3 mb-3">
+        <div class="col">
+            <h1 class="h3">ProyectoTesis — Dashboard de CSV y Radiografías</h1>
+            <p class="mb-0">Visualización interactiva tipo Our World in Data — tablas, mapas, gráficas y comparativas de radiografías</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5>Datasets (CSV)</h5>
+                    <select id="csvSelector" class="form-select mb-2"></select>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success" id="btnLoad">Cargar dataset</button>
+                        <button class="btn btn-outline-secondary" id="btnReload">Recargar lista</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h6>Radiografías</h6>
+                    <select id="xraySelector" class="form-select mb-2"></select>
+                    </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabTable">Tabla</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabCharts">Gráficos</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabMap">Mapa</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabXray">Radiografías</button></li>
+                
+                <!-- PESTAÑA 1: CLASIFICADOR INDIVIDUAL (IA) -->
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabIA_Individual">Clasificador IA</button></li>
+                <!-- PESTAÑA 2: CLASIFICADOR MASIVO -->
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabIA_Masiva">Clasificación Masiva</button></li>
+                <!-- PESTAÑA 3: INFOGRAFÍA (NUEVA) -->
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabInfografia">Infografía</button></li>
+            </ul>
+
+            <div class="tab-content p-3 border border-top-0">
+                <div class="tab-pane fade show active" id="tabTable">
+                    <h5 id="datasetTitle">—</h5>
+                    <table id="dataTable" class="display" style="width:100%"></table>
+                </div>
+
+                <div class="tab-pane fade" id="tabCharts">
+                    <div class="row mb-3 align-items-end">
+                        <div class="col-md-4"><label>Columna X (categoría)</label><select id="colX" class="form-select"></select></div>
+                        <div class="col-md-4"><label>Columna Y (numérica)</label><select id="colY" class="form-select"></select></div>
+                        <div class="col-md-4">
+                            <label>Filtro por País</label>
+                            <select id="countryFilter" class="form-select"></select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6"><div class="chart-container"><canvas id="chartBar"></canvas></div></div>
+                        <div class="col-md-6"><div class="chart-container"><canvas id="chartLine"></canvas></div></div>
+                        <div class="col-md-6"><div class="chart-container"><canvas id="chartHist"></canvas></div></div>
+                        <div class="col-md-6"><div class="chart-container"><canvas id="chartScatter"></canvas></div></div>
+                    </div>
+                </div>
+                
+
+                <div class="tab-pane fade" id="tabHeatmap">
+                    <h6>Matriz de correlación (columnas numéricas)</h6>
+                    <div id="heatmapContainer" style="overflow:auto"></div>
+                </div>
+
+                <div class="tab-pane fade" id="tabMap">
+                    <div id="map" style="height:600px;"></div>
+                    <div id="legend" class="mt-2"></div>
+                </div>
+
+                <div class="tab-pane fade" id="tabXray">
+                    <div id="xrayViewer" class="d-flex gap-3 align-items-start">
+                        <div>
+                            <h6>Original</h6>
+                            <img id="xrayImg" src="" alt="radiografia" style="max-width:450px; border:1px solid #ddd"/>
+                        </div>
+                        <div>
+                            <h6>Máscara</h6>
+                            <img id="xrayMask" src="" alt="mask" style="max-width:450px; border:1px solid #ddd"/>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- CONTENIDO DE CLASIFICADOR INDIVIDUAL -->
+                <div class="tab-pane fade" id="tabIA_Individual">
+                    <h2>Clasificador con IA (Individual)</h2>
+                    <p>Utiliza **EfficientNet** o **ResNet** para predecir patologías a partir de una radiografía.</p>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    Clasificación de Radiografía
+                                </div>
+                                <div class="card-body">
+                                    <label for="iaXraySelector" class="form-label">Seleccionar Radiografía para clasificar</label>
+                                    <select id="iaXraySelector" class="form-select mb-3"></select>
+                                    
+                                    <label for="modelSelector" class="form-label">Modelo de IA</label>
+                                    <select id="modelSelector" class="form-select mb-3">
+                                        <option value="EfficientNet">EfficientNet</option>
+                                        <option value="ResNet">ResNet</option>
+                                    </select>
+                                    
+                                    <button id="btnClassify" class="btn btn-primary d-block w-100">Clasificar</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    Radiografía a clasificar
+                                </div>
+                                <div class="card-body text-center">
+                                    <img id="iaXrayImg" src="" alt="Radiografía" style="max-width:100%; height:auto; border:1px solid #ddd; max-height: 250px;"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    Resultados del Modelo
+                                </div>
+                                <ul id="iaResults" class="list-group list-group-flush">
+                                    <li class="list-group-item text-muted">Aún no hay resultados de clasificación.</li>
+                                </ul>
+                            </div>
+                            <button id="btnGenerateReport" class="btn btn-info mt-3" disabled>Generar Reporte Automático (PDF)</button>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    Diferenciador COVID vs Neumonías (Análisis Visual)
+                                </div>
+                                <div class="card-body">
+                                    <div id="differentiatorChartContainer" class="chart-container" style="height:350px;">
+                                        <canvas id="differentiatorChart"></canvas>
+                                    </div>
+                                    <small class="text-muted">Explica visualmente la distinción del modelo basada en valores de textura y opacidad.</small>
+                                    <table class="table table-sm mt-2">
+                                        <thead><tr><th>Patología</th><th>Patrones Visibles</th></tr></thead>
+                                        <tbody>
+                                            <tr><td>COVID</td><td>Opacidades periféricas, patrón en vidrio esmerilado</td></tr>
+                                            <tr><td>Viral Pneumonia</td><td>Consolidaciones irregulares</td></tr>
+                                            <tr><td>Lung Opacity</td><td>Áreas densas no específicas</td></tr>
+                                            <tr><td>Normal</td><td>Pulmones limpios, sin opacidades</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTENIDO DE CLASIFICADOR MASIVO -->
+                <div class="tab-pane fade" id="tabIA_Masiva">
+                    <h2>Clasificación Masiva (Análisis de Lote)</h2>
+                    <p>Obtén un resumen estadístico de la distribución de patologías para todas las imágenes disponibles en la carpeta de radiografías del servidor.</p>
+
+                    <div class="card mb-4">
+                        <div class="card-header bg-warning text-white">
+                            Ejecutar Análisis
+                        </div>
+                        <div class="card-body">
+                            <button id="btnBatchClassify" class="btn btn-warning d-block w-100 mb-3">
+                                Ejecutar Análisis Masivo
+                            </button>
+                            <div id="batchResultsContainer">
+                                <div class="alert alert-secondary mb-0">Presiona el botón para cargar el resumen de clasificación masiva.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTENIDO DE INFOGRAFÍA (NUEVA) -->
+                <div class="tab-pane fade" id="tabInfografia">
+                    <h2 class="mb-4">Infografía de Resultados Masivos</h2>
+                    <p class="mb-4">Visualización de los 21,165 diagnósticos mediante una infografía interactiva de una sola página.</p>
+                    <!-- Iframe que carga el archivo de la infografía -->
+                    <iframe src="infografia_diagnostico.html" title="Infografía del Análisis Masivo"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-4 text-muted">ProyectoTesis — Dashboard para tesis (IA & Radiología)</footer>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://unpkg.com/topojson@3"></script>
+
+<script src="scripts.js"></script>
+</body>
+</html>

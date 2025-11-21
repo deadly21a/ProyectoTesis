@@ -1,0 +1,7 @@
+/* frontend/styles.css */
+body { background: #f6f7fb; font-family: 'Segoe UI', Arial, sans-serif; }
+h1.h3 { margin:0; }
+#dataTable_wrapper { margin-top: 12px; }
+#map { width:100%; border:1px solid #ddd; border-radius:4px; }
+#heatmapContainer { max-height: 520px; }
+#xrayViewer img { display:block; }
